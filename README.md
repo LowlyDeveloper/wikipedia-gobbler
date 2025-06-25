@@ -15,8 +15,7 @@ It lets you:
 
 ## 🚀 How To Use
 
-1. Go to the live page (if hosted with GitHub Pages):
-   👉 [https://lowlydeveloper.github.io/wikipedia-gobbler/](https://lowlydeveloper.github.io/wikipedia-gobbler/)
+1. install it or something idk.
 2. Type a Wikipedia search term into the input box
 3. Press search
 4. Behold! Knowledge!
