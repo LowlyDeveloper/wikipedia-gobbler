@@ -1,0 +1,11 @@
+{
+  "latest": "Wikipedia_Gobbler_DX.html",
+  "versions": [
+    "Wikipedia_Gobbler.html",
+    "Wikipedia_Gobbler_DX.html"
+  ],
+  "changelog": {
+    "Wikipedia_Gobbler.html": "Original release, basic search.",
+    "Wikipedia_Gobbler_DX.html": "Disambiguation, auto-case fix, image support."
+  }
+}
