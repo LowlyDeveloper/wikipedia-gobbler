@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wikipedia Gobbler DX</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #f0f0f0;
+      padding: 2rem;
+      text-align: center;
+    }
+    input {
+      width: 300px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid gray;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background: dodgerblue;
+      color: white;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 2rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    #result img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .suggestion {
+      background: #eee;
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .suggestion:hover {
+      background: #ddd;
+    }
+    a {
+      color: dodgerblue;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Wikipedia Gobbler DX</h1>
+  <input type="text" id="searchInput" placeholder="Enter something.">
+  <button onclick="searchWiki()">Search</button>
+  <div id="result"></div>
+
+  <script>
+    async function searchWiki(queryOverride = null) {
+      const query = queryOverride || document.getElementById("searchInput").value.trim();
+      const resultDiv = document.getElementById("result");
+
+      if (!query) {
+        resultDiv.innerHTML = "<p>No Syntax Detected!</p>";
+        return;
+      }
+
+      resultDiv.innerHTML = "<p>🌀 Searching Wikipedia...</p>";
+
+      try {
+        const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+
+        if (!response.ok) {
+          // fallback to search API if page not found
+          getSuggestions(query);
+          return;
+        }
+
+        const data = await response.json();
+
+        // Handle disambiguation pages with clickable options
+        if (data.type === "disambiguation") {
+          resultDiv.innerHTML = `
+            <h2>${data.title}</h2>
+            <p>This is a disambiguation page.</p>
+          `;
+
+          const links = data.extract.split(/, |; | or /); // crude but works
+
+          links.forEach(text => {
+            const match = text.match(/\[\[(.*?)\]\]/); // for internal wiki syntax
+            const title = match ? match[1] : text;
+            const div = document.createElement("div");
+            div.className = "suggestion";
+            div.innerText = title;
+            div.onclick = () => {
+              document.getElementById("searchInput").value = title;
+              searchWiki(title);
+            };
+            resultDiv.appendChild(div);
+          });
+
+          resultDiv.innerHTML += `<br><a href="${data.content_urls.desktop.page}" target="_blank">🌐 View full disambiguation</a>`;
+          return;
+        }
+
+        // Normal page result
+        resultDiv.innerHTML = `
+          ${data.thumbnail ? `<img src="${data.thumbnail.source}" alt="${data.title}">` : ''}
+          <h2>${data.title}</h2>
+          <p>${data.extract}</p>
+          <a href="${data.content_urls.desktop.page}" target="_blank">🌐 Read more on Wikipedia</a>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = "<p>🚨 Something Happened.</p>";
+        console.error(error);
+      }
+    }
+
+    async function getSuggestions(query) {
+      const resultDiv = document.getElementById("result");
+
+      resultDiv.innerHTML = `<p>❓ Couldn't find <b>${query}</b> directly. Here's what we found instead:</p>`;
+
+      try {
+        const response = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=6&namespace=0&format=json&origin=*`);
+        const data = await response.json();
+
+        if (data[1].length === 0) {
+          resultDiv.innerHTML += `<p>🔍 No close matches either</p>`;
+          return;
+        }
+
+        data[1].forEach((title) => {
+          const div = document.createElement("div");
+          div.className = "suggestion";
+          div.innerText = title;
+          div.onclick = () => {
+            document.getElementById("searchInput").value = title;
+            searchWiki(title);
+          };
+          resultDiv.appendChild(div);
+        });
+      } catch (error) {
+        resultDiv.innerHTML = "<p>🛠 Suggestion search failed.</p>";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
